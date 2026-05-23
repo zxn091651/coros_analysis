@@ -110,7 +110,8 @@ async function handleAnalyze() {
   } catch (e) {
     console.error(e);
     $("report").innerHTML = "";
-    setStatus($("analyze-status"), e.message || String(e), "error");
+    const msg = e.message || String(e);
+    setStatus($("analyze-status"), msg, "error");
   } finally {
     $("btn-analyze").disabled = false;
   }
