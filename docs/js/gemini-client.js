@@ -1,9 +1,8 @@
 /**
- * Gemini API — 经可选代理转发（浏览器必须走代理，不能直连 Google）
+ * Gemini API — 经 Worker 代理；授权码在 Worker 端解码，浏览器不传 API Key。
  */
 
 const MODEL = "gemini-2.5-flash";
-const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_PROXY_URL = "https://coros-gemini-proxy.zxn091651.workers.dev";
 
 export const SYSTEM_PROMPT = `你是一位专业的耐力运动教练与运动生理分析师，熟悉 COROS 手表的数据含义。
@@ -19,10 +18,6 @@ let _proxyBase = DEFAULT_PROXY_URL;
 
 export function setGeminiProxyUrl(url) {
   _proxyBase = (url || "").trim().replace(/\/$/, "");
-}
-
-export function getGeminiProxyUrl() {
-  return _proxyBase;
 }
 
 export async function loadGeminiConfig() {
@@ -71,72 +66,33 @@ ${json}`;
 ${json}`;
 }
 
-function normalizeApiKey(raw) {
-  return (raw || "").trim().replace(/\s+/g, "");
-}
-
-function buildApiUrl() {
-  const path = `/models/${MODEL}:generateContent`;
-  if (_proxyBase) {
-    return `${_proxyBase}${path}`;
-  }
-  return `${GEMINI_ORIGIN}${path}`;
-}
-
 function parseGeminiError(status, body) {
-  const msg = body?.error?.message || body?.error?.status || `HTTP ${status}`;
-  const reason = body?.error?.details?.[0]?.reason || "";
+  const msg = body?.error?.message || `HTTP ${status}`;
 
+  if (status === 401) {
+    return "授权码无效，请在 Worker 重新部署后重试";
+  }
   if (status === 429 || /quota|RESOURCE_EXHAUSTED/i.test(msg)) {
     return "Gemini 配额不足或请求过快，请稍后再试。";
   }
-
-  if (
-    /API key not valid|API_KEY_INVALID|invalid.*api.*key/i.test(msg) ||
-    reason === "API_KEY_INVALID"
-  ) {
-    if (!_proxyBase) {
-      return (
-        "Gemini 在浏览器中无法直连（会误报 API Key 无效）。\n\n" +
-        "请部署 Cloudflare Worker 代理（见仓库 worker/README.md），\n" +
-        "在下方填写「Gemini 代理地址」，或写入 docs/config.json 后重新推送。\n\n" +
-        `原始错误：${msg}`
-      );
-    }
-    return (
-      "API Key 被 Google 拒绝。请检查：\n" +
-      "1. 密钥完整（AIza 开头）\n" +
-      "2. AI Studio 中 Key 应用限制为「无」\n" +
-      `原始错误：${msg}`
-    );
+  if (/API key not valid|API_KEY_INVALID/i.test(msg)) {
+    return `Gemini 服务异常：${msg}`;
   }
-
-  if (status === 403 || /PERMISSION_DENIED|leaked/i.test(msg)) {
-    return `Gemini 权限被拒绝：${msg}`;
-  }
-
   return msg;
 }
 
-export async function analyzeWithGemini(apiKey, mode, dataset, onProgress) {
-  const key = normalizeApiKey(apiKey);
-  if (!key) throw new Error("请填写 Gemini API Key");
-  if (!key.startsWith("AIza")) {
-    throw new Error("API Key 格式应以 AIza 开头");
-  }
+export async function analyzeWithGemini(authCode, mode, dataset, onProgress) {
+  const code = (authCode || "").trim();
+  if (!code) throw new Error("请填写授权码");
 
   if (!_proxyBase) {
-    throw new Error(
-      "未配置 Gemini 代理。网页端必须经 Cloudflare Worker 转发才能调用 Gemini。\n" +
-        "请填写下方「Gemini 代理地址」（部署说明见 GitHub 仓库 worker/README.md），" +
-        "或改用本地：python analyze.py"
-    );
+    throw new Error("未配置 Gemini 代理地址");
   }
 
   const prompt = buildPrompt(mode, dataset);
-  if (onProgress) onProgress(`正在通过代理请求 Gemini…`);
+  if (onProgress) onProgress("正在通过代理请求 Gemini…");
 
-  const url = buildApiUrl();
+  const url = `${_proxyBase}/v1beta/models/${MODEL}:generateContent`;
 
   let res;
   try {
@@ -144,7 +100,7 @@ export async function analyzeWithGemini(apiKey, mode, dataset, onProgress) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": key,
+        "X-Auth-Code": code,
       },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -153,9 +109,7 @@ export async function analyzeWithGemini(apiKey, mode, dataset, onProgress) {
       }),
     });
   } catch (e) {
-    throw new Error(
-      `无法连接 Gemini 代理（${_proxyBase}）：${e.message}\n请确认 Worker 已部署且地址正确。`
-    );
+    throw new Error(`无法连接 Gemini 代理：${e.message}`);
   }
 
   const body = await res.json().catch(() => ({}));

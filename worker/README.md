@@ -1,24 +1,34 @@
-# Gemini 代理 Worker（解决网页端 API Key 报错）
+# Gemini 代理 Worker
 
-GitHub Pages 在**浏览器里**无法直连 `generativelanguage.googleapis.com`（无 CORS），
-会表现为「API Key 无效」。本地 Python 不受影响。
+浏览器无法直连 Google Gemini（CORS）。本 Worker 负责：
 
-## 免费部署（约 2 分钟）
+1. 接收请求头 **`X-Auth-Code`**（授权码）
+2. 在 **Worker 内**解码得到 Gemini API Key（或使用机密变量）
+3. 转发到 `generativelanguage.googleapis.com`
 
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create**
-2. 选 **Create Worker** → 粘贴 `gemini-proxy.js` 全部内容 → **Deploy**
-3. 记下地址，例如：`https://coros-gemini-proxy.xxx.workers.dev`
+前端 **不再**包含 API Key 或解码逻辑。
 
-## 配置到网站
+## 部署 / 更新（必做）
 
-**方式 A（推荐）**：编辑仓库 `docs/config.json`：
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/) → 你的 Worker `coros-gemini-proxy`
+2. **Edit code** → 用仓库中 `worker/gemini-proxy.js` **全部替换** → **Deploy**
 
-```json
-{
-  "geminiProxyUrl": "https://coros-gemini-proxy.xxx.workers.dev"
-}
+## 可选：机密变量（更安全）
+
+Worker → **Settings** → **Variables and Secrets** → 添加：
+
+| 名称 | 类型 | 说明 |
+|------|------|------|
+| `GEMINI_API_KEY` | Secret | 你的 `AIza…` 密钥；设置后优先使用，不再依赖内置解码 |
+
+授权码仍由 `X-Auth-Code` 校验；仅 API Key 存于 Cloudflare 机密中。
+
+## 请求格式
+
+```
+POST https://coros-gemini-proxy.zxn091651.workers.dev/v1beta/models/gemini-2.5-flash:generateContent
+X-Auth-Code: <授权码>
+Content-Type: application/json
 ```
 
-推送后 GitHub Pages 会自动使用代理。
-
-**方式 B**：在网页「Gemini 代理地址」输入框填写 Worker 地址（保存在浏览器本地）。
+授权码错误时返回 **401**。

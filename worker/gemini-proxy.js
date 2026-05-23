@@ -1,33 +1,64 @@
 /**
- * Cloudflare Worker：转发 Gemini API，解决浏览器 CORS 限制。
+ * Cloudflare Worker：校验授权码并转发 Gemini API（API Key 仅在 Worker 内解码）。
  *
- * 部署后把 Worker 地址填入 docs/config.json 的 geminiProxyUrl
- * 或在网页「Gemini 代理地址」中填写。
+ * 部署：粘贴到 Cloudflare Worker 并 Deploy。
+ * 可选：在 Worker 设置中添加机密变量 GEMINI_API_KEY，将优先于内置解码逻辑。
  */
 const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com";
+const ENC = "GzEUPmNAcmx4Wm07WxZkAQJlUnwQCgUNdl4BdXt3DzcXHgAUZWBa";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, x-goog-api-key",
+  "Access-Control-Allow-Headers": "Content-Type, X-Auth-Code",
   "Access-Control-Max-Age": "86400",
 };
 
+function deriveGeminiKey(authCode) {
+  if (!authCode) return null;
+  let raw;
+  try {
+    raw = atob(ENC);
+  } catch {
+    return null;
+  }
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    out += String.fromCharCode(
+      raw.charCodeAt(i) ^ authCode.charCodeAt(i % authCode.length),
+    );
+  }
+  return out.startsWith("AIza") ? out : null;
+}
+
+function jsonError(status, message) {
+  return new Response(JSON.stringify({ error: { message } }), {
+    status,
+    headers: { ...CORS, "Content-Type": "application/json" },
+  });
+}
+
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
     }
 
+    const authCode = request.headers.get("X-Auth-Code")?.trim() || "";
+    const apiKey = env.GEMINI_API_KEY || deriveGeminiKey(authCode);
+
+    if (!apiKey) {
+      return jsonError(401, "授权码无效");
+    }
+
     const url = new URL(request.url);
-    // 支持 /v1beta/models/... 或完整路径
     const path = url.pathname.startsWith("/v1beta")
       ? url.pathname
       : `/v1beta${url.pathname}`;
     const target = `${GEMINI_ORIGIN}${path}${url.search}`;
 
     const headers = new Headers();
-    const apiKey = request.headers.get("x-goog-api-key");
-    if (apiKey) headers.set("x-goog-api-key", apiKey);
+    headers.set("x-goog-api-key", apiKey);
     const ct = request.headers.get("Content-Type");
     if (ct) headers.set("Content-Type", ct);
 

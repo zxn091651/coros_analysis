@@ -1,6 +1,5 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
 import { analyzeWithGemini, loadGeminiConfig } from "./gemini-client.js";
-import { deriveGeminiKeyFromAuthCode } from "./secrets.js";
 
 const COROS_REGION = "cn";
 
@@ -31,7 +30,7 @@ function renderReportHtml(text) {
 
 let dataset = null;
 let auth = null;
-let geminiKey = null;
+let authCode = "";
 
 function setStatus(el, text, type = "") {
   if (!el) return;
@@ -53,14 +52,10 @@ function renderStats(data) {
   $("data-preview").textContent = JSON.stringify(data, null, 2);
 }
 
-function resolveGeminiKey() {
-  return deriveGeminiKeyFromAuthCode(fieldValue("auth-code").trim());
-}
-
 async function handleFetch() {
   const email = fieldValue("email").trim();
   const password = fieldValue("password");
-  const authCode = fieldValue("auth-code").trim();
+  authCode = fieldValue("auth-code").trim();
 
   if (!email || !password) {
     setStatus($("fetch-status"), "请填写 COROS 邮箱和密码", "error");
@@ -68,12 +63,6 @@ async function handleFetch() {
   }
   if (!authCode) {
     setStatus($("fetch-status"), "请填写授权码", "error");
-    return;
-  }
-
-  geminiKey = resolveGeminiKey();
-  if (!geminiKey) {
-    setStatus($("fetch-status"), "授权码无效，无法启用 AI 分析", "error");
     return;
   }
 
@@ -99,7 +88,6 @@ async function handleFetch() {
     console.error(e);
     setStatus($("fetch-status"), e.message || String(e), "error");
     dataset = null;
-    geminiKey = null;
     $("btn-analyze").disabled = true;
   } finally {
     $("btn-fetch").disabled = false;
@@ -107,9 +95,9 @@ async function handleFetch() {
 }
 
 async function handleAnalyze() {
-  geminiKey = resolveGeminiKey();
-  if (!geminiKey) {
-    setStatus($("analyze-status"), "授权码无效，无法分析", "error");
+  authCode = fieldValue("auth-code").trim();
+  if (!authCode) {
+    setStatus($("analyze-status"), "请填写授权码", "error");
     return;
   }
   if (!dataset) return;
@@ -123,7 +111,7 @@ async function handleAnalyze() {
   showSection("section-result");
 
   try {
-    const report = await analyzeWithGemini(geminiKey, mode, dataset, (msg) => {
+    const report = await analyzeWithGemini(authCode, mode, dataset, (msg) => {
       setStatus($("analyze-status"), msg);
     });
     $("report").innerHTML = renderReportHtml(report);
