@@ -6,6 +6,11 @@ const COROS_REGION = "cn";
 
 const $ = (id) => document.getElementById(id);
 
+function fieldValue(id) {
+  const el = $(id);
+  return el ? el.value : "";
+}
+
 function renderReportHtml(text) {
   const escaped = text
     .replace(/&/g, "&amp;")
