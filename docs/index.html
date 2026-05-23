@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="COROS 运动数据分析 — 纯前端，Gemini AI" />
+  <meta name="description" content="COROS 运动数据分析" />
   <meta name="theme-color" content="#0f766e" />
   <title>COROS 智能分析</title>
   <link rel="stylesheet" href="css/app.css" />
@@ -11,7 +11,6 @@
 <body>
   <div class="app">
     <header class="header">
-      <div class="header-badge">纯前端 · 数据不出浏览器</div>
       <h1>COROS 智能分析</h1>
       <p class="subtitle">登录 COROS 训练中心，由 Gemini 生成训练报告</p>
     </header>
@@ -19,7 +18,6 @@
     <main class="main">
       <section class="card" id="section-auth">
         <h2>1. 登录 COROS</h2>
-        <p class="hint">邮箱与密码仅用于直连 COROS 官方 API，不会经过任何第三方服务器。</p>
         <div class="field">
           <label for="email">邮箱</label>
           <input id="email" type="email" autocomplete="username" placeholder="COROS 账号邮箱" />
@@ -27,32 +25,6 @@
         <div class="field">
           <label for="password">密码</label>
           <input id="password" type="password" autocomplete="current-password" placeholder="COROS 密码" />
-        </div>
-        <div class="field">
-          <label for="region">区域</label>
-          <select id="region">
-            <option value="auto">自动检测</option>
-            <option value="asia">亚洲 (teamcnapi)</option>
-            <option value="eu">欧洲 (teameuapi)</option>
-            <option value="us">美洲 (teamapi)</option>
-            <option value="cn">中国 (teamcnapi)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="gemini-proxy">Gemini 代理地址 <span class="required">必填</span></label>
-          <input id="gemini-proxy" type="url" autocomplete="off" placeholder="https://xxx.workers.dev" />
-          <span class="field-note">浏览器不能直连 Google，需免费 Cloudflare Worker。见
-            <a href="https://github.com/zxn091651/coros_analysis/blob/main/worker/README.md" target="_blank" rel="noopener">部署说明</a>
-          </span>
-        </div>
-        <div class="field">
-          <label for="gemini-key">Gemini API Key</label>
-          <input id="gemini-key" type="password" autocomplete="off" placeholder="AIza…（Google AI Studio）" />
-          <details class="key-help">
-            <summary>为什么 Python 能用、网页不行？</summary>
-            <p>不是 Key 坏了，而是<strong>浏览器无法直连</strong> Gemini（CORS），会误报「Key 无效」。
-              请按说明部署 Worker 并填写上方代理地址。本地分析可用 <code>python analyze.py</code>。</p>
-          </details>
         </div>
         <button type="button" class="btn btn-primary" id="btn-fetch">获取 COROS 数据</button>
         <p class="status" id="fetch-status" aria-live="polite"></p>
@@ -93,13 +65,13 @@
     </main>
 
     <footer class="footer">
-      <p>模型：<strong>gemini-2.5-flash</strong> · API 与 coros-mcp 同源</p>
+      <p>模型：<strong>gemini-2.5-flash</strong></p>
       <p><a href="https://github.com/zxn091651/coros_analysis" target="_blank" rel="noopener">GitHub</a></p>
     </footer>
   </div>
 
   <noscript>
-    <p style="padding:2rem;text-align:center">请启用 JavaScript，并使用本地服务器打开（运行 preview.bat），不要直接双击 HTML 文件。</p>
+    <p style="padding:2rem;text-align:center">请启用 JavaScript。</p>
   </noscript>
   <script type="module" src="js/app.js"></script>
 </body>

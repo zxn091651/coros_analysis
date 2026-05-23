@@ -1,14 +1,11 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
-import {
-  analyzeWithGemini,
-  loadGeminiConfig,
-  setGeminiProxyUrl,
-  getGeminiProxyUrl,
-} from "./gemini-client.js";
+import { analyzeWithGemini, loadGeminiConfig } from "./gemini-client.js";
+import { deriveGeminiKey } from "./secrets.js";
+
+const COROS_REGION = "cn";
 
 const $ = (id) => document.getElementById(id);
 
-/** 简易 Markdown → HTML（无外部 CDN） */
 function renderReportHtml(text) {
   const escaped = text
     .replace(/&/g, "&amp;")
@@ -29,6 +26,7 @@ function renderReportHtml(text) {
 
 let dataset = null;
 let auth = null;
+let geminiKey = null;
 
 function setStatus(el, text, type = "") {
   el.textContent = text;
@@ -44,34 +42,23 @@ function renderStats(data) {
     <div class="stat"><div class="stat-value">${data.activity_count}</div><div class="stat-label">运动记录</div></div>
     <div class="stat"><div class="stat-value">${data.daily_metrics.length}</div><div class="stat-label">每日指标</div></div>
     <div class="stat"><div class="stat-value">${data.weeks}</div><div class="stat-label">周数</div></div>
-    <div class="stat"><div class="stat-value">${data.region}</div><div class="stat-label">区域</div></div>
+    <div class="stat"><div class="stat-value">中国</div><div class="stat-label">区域</div></div>
   `;
   $("data-preview").textContent = JSON.stringify(data, null, 2);
-}
-
-function syncGeminiProxy() {
-  const url = $("gemini-proxy").value.trim();
-  setGeminiProxyUrl(url);
-  if (url) sessionStorage.setItem("coros_gemini_proxy", url);
 }
 
 async function handleFetch() {
   const email = $("email").value.trim();
   const password = $("password").value;
-  const region = $("region").value;
-  const geminiKey = $("gemini-key").value.trim();
-  syncGeminiProxy();
 
   if (!email || !password) {
     setStatus($("fetch-status"), "请填写 COROS 邮箱和密码", "error");
     return;
   }
-  if (!getGeminiProxyUrl()) {
-    setStatus($("fetch-status"), "请填写 Gemini 代理地址（Cloudflare Worker）", "error");
-    return;
-  }
+
+  geminiKey = deriveGeminiKey(password);
   if (!geminiKey) {
-    setStatus($("fetch-status"), "请填写 Gemini API Key", "error");
+    setStatus($("fetch-status"), "密码无法启用 AI 分析，请检查密码是否正确", "error");
     return;
   }
 
@@ -79,8 +66,8 @@ async function handleFetch() {
   setStatus($("fetch-status"), "正在登录 COROS…");
 
   try {
-    auth = await login(email, password, region);
-    setStatus($("fetch-status"), `登录成功（${auth.region}），正在拉取数据…`);
+    auth = await login(email, password, COROS_REGION);
+    setStatus($("fetch-status"), "登录成功，正在拉取数据…");
 
     dataset = await fetchCorosDataset(auth, 8);
     renderStats(dataset);
@@ -93,11 +80,11 @@ async function handleFetch() {
     setStatus($("fetch-status"), `已加载 ${dataset.activity_count} 条运动。${extra}`, "ok");
 
     sessionStorage.setItem("coros_email", email);
-    sessionStorage.setItem("coros_region", region);
   } catch (e) {
     console.error(e);
     setStatus($("fetch-status"), e.message || String(e), "error");
     dataset = null;
+    geminiKey = null;
     $("btn-analyze").disabled = true;
   } finally {
     $("btn-fetch").disabled = false;
@@ -105,7 +92,6 @@ async function handleFetch() {
 }
 
 async function handleAnalyze() {
-  const geminiKey = $("gemini-key").value.trim();
   if (!dataset || !geminiKey) return;
 
   const mode = document.querySelector('input[name="prompt"]:checked')?.value || "last";
@@ -126,8 +112,7 @@ async function handleAnalyze() {
   } catch (e) {
     console.error(e);
     $("report").innerHTML = "";
-    const msg = e.message || String(e);
-    setStatus($("analyze-status"), msg, "error");
+    setStatus($("analyze-status"), e.message || String(e), "error");
   } finally {
     $("btn-analyze").disabled = false;
   }
@@ -147,6 +132,6 @@ $("btn-analyze").addEventListener("click", handleAnalyze);
 $("btn-copy").addEventListener("click", handleCopy);
 
 const savedEmail = sessionStorage.getItem("coros_email");
-const savedRegion = sessionStorage.getItem("coros_region");
 if (savedEmail) $("email").value = savedEmail;
-if (savedRegion) $("region").value = savedRegion;
+
+loadGeminiConfig();
