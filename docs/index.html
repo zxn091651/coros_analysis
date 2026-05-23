@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="COROS 运动数据分析 — 纯前端，Gemini AI" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>COROS 智能分析</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-badge">纯前端 · 数据不出浏览器</div>
+      <h1>COROS 智能分析</h1>
+      <p class="subtitle">登录 COROS 训练中心，由 Gemini 生成训练报告</p>
+    </header>
+
+    <main class="main">
+      <section class="card" id="section-auth">
+        <h2>1. 登录 COROS</h2>
+        <p class="hint">邮箱与密码仅用于直连 COROS 官方 API，不会经过任何第三方服务器。</p>
+        <div class="field">
+          <label for="email">邮箱</label>
+          <input id="email" type="email" autocomplete="username" placeholder="COROS 账号邮箱" />
+        </div>
+        <div class="field">
+          <label for="password">密码</label>
+          <input id="password" type="password" autocomplete="current-password" placeholder="COROS 密码" />
+        </div>
+        <div class="field">
+          <label for="region">区域</label>
+          <select id="region">
+            <option value="auto">自动检测</option>
+            <option value="asia">亚洲 (teamcnapi)</option>
+            <option value="eu">欧洲 (teameuapi)</option>
+            <option value="us">美洲 (teamapi)</option>
+            <option value="cn">中国 (teamcnapi)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gemini-key">Gemini API Key</label>
+          <input id="gemini-key" type="password" autocomplete="off" placeholder="Google AI Studio 密钥" />
+          <span class="field-note">用于调用 gemini-2.5-flash，仅存于本机内存</span>
+        </div>
+        <button type="button" class="btn btn-primary" id="btn-fetch">获取 COROS 数据</button>
+        <p class="status" id="fetch-status" aria-live="polite"></p>
+      </section>
+
+      <section class="card card-hidden" id="section-data">
+        <h2>2. 数据预览</h2>
+        <div class="stats" id="data-stats"></div>
+        <details class="raw-details">
+          <summary>查看原始 JSON</summary>
+          <pre id="data-preview"></pre>
+        </details>
+      </section>
+
+      <section class="card card-hidden" id="section-analyze">
+        <h2>3. 选择分析模式</h2>
+        <div class="prompt-options">
+          <label class="prompt-option">
+            <input type="radio" name="prompt" value="last" checked />
+            <span class="prompt-title">最近一次运动</span>
+            <span class="prompt-desc">结合近期 HRV、训练负荷等数据，专项分析最近一场运动</span>
+          </label>
+          <label class="prompt-option">
+            <input type="radio" name="prompt" value="full" />
+            <span class="prompt-title">全面分析</span>
+            <span class="prompt-desc">分析全部运动记录与恢复指标，给出综合报告</span>
+          </label>
+        </div>
+        <button type="button" class="btn btn-accent" id="btn-analyze" disabled>开始 AI 分析</button>
+        <p class="status" id="analyze-status" aria-live="polite"></p>
+      </section>
+
+      <section class="card card-hidden" id="section-result">
+        <h2>分析报告</h2>
+        <div class="report" id="report"></div>
+        <button type="button" class="btn btn-ghost" id="btn-copy">复制报告</button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>模型：<strong>gemini-2.5-flash</strong> · API 与 coros-mcp 同源</p>
+      <p><a href="https://github.com/zxn091651/coros_analysis" target="_blank" rel="noopener">GitHub</a></p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

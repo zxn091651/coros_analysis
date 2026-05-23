@@ -1,0 +1,11 @@
+.env
+.venv/
+# 勿将密钥写入仓库
+**/config.secrets.*
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+reports/
+*.md.bak
+inspect_db.py
