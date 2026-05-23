@@ -14,13 +14,24 @@
 
 ## 本地预览
 
-```bash
-cd docs
-python -m http.server 8080
-# 打开 http://localhost:8080
+**推荐：双击项目根目录的 `preview.bat`**
+
+会先启动 HTTP 服务，再打开浏览器（避免 `chrome-error` 空白页）。
+访问 **http://127.0.0.1:8088/**
+
+或手动执行：
+
+```powershell
+cd e:\coros-analysis\docs
+python -m http.server 8088 --bind 127.0.0.1
+# 浏览器打开 http://127.0.0.1:8088/
 ```
 
-需使用本地服务器（ES module 不支持 `file://`）。
+**常见打不开的原因：**
+
+1. **直接双击 `index.html`** — 不行，必须用上面的 HTTP 服务器
+2. **地址错误** — 服务器在 `docs` 目录启动时，应访问 `http://127.0.0.1:8088/`（不是 `/docs/`）
+3. **端口被占用** — 改端口：`python -m http.server 9000 --bind 127.0.0.1`
 
 ## 启用 Pages
 

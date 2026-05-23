@@ -42,8 +42,10 @@ const SPORT_NAMES = {
   9807: "Bike Commute",
 };
 
+import { md5 as md5hash } from "./md5.js";
+
 export function md5(text) {
-  return SparkMD5.hash(text);
+  return md5hash(text);
 }
 
 function yyyymmdd(d) {
