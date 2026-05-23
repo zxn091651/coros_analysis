@@ -1,5 +1,5 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
-import { analyzeWithGemini, loadGeminiConfig, verifyAuthCode } from "./gemini-client.js";
+import { analyzeWithGemini, loadGeminiConfig, verifyAuthCode } from "./gemini-client.js?v=7";
 
 const COROS_REGION = "cn";
 
