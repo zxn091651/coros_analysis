@@ -107,7 +107,12 @@ async function handleFetch() {
 }
 
 async function handleAnalyze() {
-  if (!dataset || !geminiKey) return;
+  geminiKey = resolveGeminiKey();
+  if (!geminiKey) {
+    setStatus($("analyze-status"), "授权码无效，无法分析", "error");
+    return;
+  }
+  if (!dataset) return;
 
   const mode = document.querySelector('input[name="prompt"]:checked')?.value || "last";
 
