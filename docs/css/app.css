@@ -107,6 +107,11 @@ body {
   margin-bottom: 0.35rem;
 }
 
+.field label .required {
+  color: var(--danger);
+  font-size: 0.72rem;
+}
+
 .field input,
 .field select {
   width: 100%;

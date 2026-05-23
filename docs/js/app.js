@@ -1,5 +1,10 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
-import { analyzeWithGemini } from "./gemini-client.js";
+import {
+  analyzeWithGemini,
+  loadGeminiConfig,
+  setGeminiProxyUrl,
+  getGeminiProxyUrl,
+} from "./gemini-client.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -44,14 +49,25 @@ function renderStats(data) {
   $("data-preview").textContent = JSON.stringify(data, null, 2);
 }
 
+function syncGeminiProxy() {
+  const url = $("gemini-proxy").value.trim();
+  setGeminiProxyUrl(url);
+  if (url) sessionStorage.setItem("coros_gemini_proxy", url);
+}
+
 async function handleFetch() {
   const email = $("email").value.trim();
   const password = $("password").value;
   const region = $("region").value;
   const geminiKey = $("gemini-key").value.trim();
+  syncGeminiProxy();
 
   if (!email || !password) {
     setStatus($("fetch-status"), "请填写 COROS 邮箱和密码", "error");
+    return;
+  }
+  if (!getGeminiProxyUrl()) {
+    setStatus($("fetch-status"), "请填写 Gemini 代理地址（Cloudflare Worker）", "error");
     return;
   }
   if (!geminiKey) {

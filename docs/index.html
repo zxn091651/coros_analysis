@@ -39,18 +39,19 @@
           </select>
         </div>
         <div class="field">
+          <label for="gemini-proxy">Gemini 代理地址 <span class="required">必填</span></label>
+          <input id="gemini-proxy" type="url" autocomplete="off" placeholder="https://xxx.workers.dev" />
+          <span class="field-note">浏览器不能直连 Google，需免费 Cloudflare Worker。见
+            <a href="https://github.com/zxn091651/coros_analysis/blob/main/worker/README.md" target="_blank" rel="noopener">部署说明</a>
+          </span>
+        </div>
+        <div class="field">
           <label for="gemini-key">Gemini API Key</label>
           <input id="gemini-key" type="password" autocomplete="off" placeholder="AIza…（Google AI Studio）" />
           <details class="key-help">
-            <summary>密钥在 Python 能用、网页却报错？</summary>
-            <p>网页从 GitHub Pages 调用 Gemini，与本地 Python 环境不同。请在
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>
-              打开该密钥设置：</p>
-            <ul>
-              <li><strong>应用限制</strong>：选「无」；或「网站」并添加 <code>https://zxn091651.github.io/*</code></li>
-              <li><strong>API 限制</strong>：需包含 Generative Language API</li>
-              <li>完整复制密钥，不要有空格</li>
-            </ul>
+            <summary>为什么 Python 能用、网页不行？</summary>
+            <p>不是 Key 坏了，而是<strong>浏览器无法直连</strong> Gemini（CORS），会误报「Key 无效」。
+              请按说明部署 Worker 并填写上方代理地址。本地分析可用 <code>python analyze.py</code>。</p>
           </details>
         </div>
         <button type="button" class="btn btn-primary" id="btn-fetch">获取 COROS 数据</button>
