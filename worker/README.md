@@ -33,11 +33,22 @@
 
 ## 请求格式
 
+**校验授权码**（网页在拉取 COROS 数据前会调用，不消耗 Gemini 配额）：
+
+```http
+POST /verify
+X-Auth-Code: <你在 Secret 中配置的 AUTH_CODE>
+```
+
+**生成分析**：
+
 ```http
 POST /v1beta/models/gemini-2.5-flash:generateContent
 Content-Type: application/json
 X-Auth-Code: <你在 Secret 中配置的 AUTH_CODE>
 ```
+
+> 若线上仍运行旧版 Worker（仅配置 `GEMINI_API_KEY`、不校验 `AUTH_CODE`），任意授权码都可能通过。请用本仓库最新 `gemini-proxy.js` **重新 Deploy**，并同时配置两个 Secret。
 
 | 响应 | 含义 |
 |------|------|

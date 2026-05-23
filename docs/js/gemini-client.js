@@ -1,5 +1,5 @@
 /**
- * Gemini API — 经 Worker 代理；授权码在 Worker 端解码，浏览器不传 API Key。
+ * Gemini API — 经 Worker 代理；授权码由 Worker 与 AUTH_CODE Secret 比对，浏览器不传 API Key。
  */
 
 const MODEL = "gemini-2.5-flash";
@@ -81,6 +81,27 @@ function parseGeminiError(status, body) {
   return msg;
 }
 
+export async function verifyAuthCode(authCode) {
+  const code = (authCode || "").trim();
+  if (!code) throw new Error("请填写授权码");
+  if (!_proxyBase) throw new Error("未配置 Gemini 代理地址");
+
+  let res;
+  try {
+    res = await fetch(`${_proxyBase}/verify`, {
+      method: "POST",
+      headers: { "X-Auth-Code": code },
+    });
+  } catch (e) {
+    throw new Error(`无法连接 Gemini 代理：${e.message}`);
+  }
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(parseGeminiError(res.status, body));
+  }
+}
+
 export async function analyzeWithGemini(authCode, mode, dataset, onProgress) {
   const code = (authCode || "").trim();
   if (!code) throw new Error("请填写授权码");
@@ -88,6 +109,8 @@ export async function analyzeWithGemini(authCode, mode, dataset, onProgress) {
   if (!_proxyBase) {
     throw new Error("未配置 Gemini 代理地址");
   }
+
+  await verifyAuthCode(code);
 
   const prompt = buildPrompt(mode, dataset);
   if (onProgress) onProgress("正在通过代理请求 Gemini…");

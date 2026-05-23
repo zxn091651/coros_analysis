@@ -1,5 +1,5 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
-import { analyzeWithGemini, loadGeminiConfig } from "./gemini-client.js";
+import { analyzeWithGemini, loadGeminiConfig, verifyAuthCode } from "./gemini-client.js";
 
 const COROS_REGION = "cn";
 
@@ -67,9 +67,12 @@ async function handleFetch() {
   }
 
   $("btn-fetch").disabled = true;
-  setStatus($("fetch-status"), "正在登录 COROS…");
 
   try {
+    setStatus($("fetch-status"), "正在校验授权码…");
+    await verifyAuthCode(authCode);
+
+    setStatus($("fetch-status"), "正在登录 COROS…");
     auth = await login(email, password, COROS_REGION);
     setStatus($("fetch-status"), "登录成功，正在拉取数据…");
 
