@@ -1,34 +1,27 @@
 # Gemini 代理 Worker
 
-浏览器无法直连 Google Gemini（CORS）。本 Worker 负责：
+浏览器只发送 **`X-Auth-Code`**，API Key 仅存于 Cloudflare Secrets。
 
-1. 接收请求头 **`X-Auth-Code`**（授权码）
-2. 在 **Worker 内**解码得到 Gemini API Key（或使用机密变量）
-3. 转发到 `generativelanguage.googleapis.com`
+## Secrets（必填，类型均选 Secret）
 
-前端 **不再**包含 API Key 或解码逻辑。
+| 名称 | 值 |
+|------|-----|
+| `GEMINI_API_KEY` | Google AI Studio 的 `AIza…` 密钥 |
+| `AUTH_CODE` | 网页授权码（与前端填写一致，如 `Zxn_091651`） |
 
-## 部署 / 更新（必做）
+**Settings** → **Variables and Secrets** → **Add** → 选 **Secret**，不要用 Plaintext。
 
-1. [Cloudflare Dashboard](https://dash.cloudflare.com/) → 你的 Worker `coros-gemini-proxy`
-2. **Edit code** → 用仓库中 `worker/gemini-proxy.js` **全部替换** → **Deploy**
+## 部署
 
-## 可选：机密变量（更安全）
+1. 用本目录 `gemini-proxy.js` 替换 Worker 代码 → **Deploy**
+2. 确认两个 Secret 已保存
 
-Worker → **Settings** → **Variables and Secrets** → 添加：
-
-| 名称 | 类型 | 说明 |
-|------|------|------|
-| `GEMINI_API_KEY` | Secret | 你的 `AIza…` 密钥；设置后优先使用，不再依赖内置解码 |
-
-授权码仍由 `X-Auth-Code` 校验；仅 API Key 存于 Cloudflare 机密中。
-
-## 请求格式
+## 请求示例
 
 ```
-POST https://coros-gemini-proxy.zxn091651.workers.dev/v1beta/models/gemini-2.5-flash:generateContent
-X-Auth-Code: <授权码>
+POST .../v1beta/models/gemini-2.5-flash:generateContent
+X-Auth-Code: <你的授权码>
 Content-Type: application/json
 ```
 
-授权码错误时返回 **401**。
+授权码错误 → **401**；未配置 Secret → **500**。

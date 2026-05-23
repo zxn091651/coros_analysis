@@ -1,11 +1,11 @@
 /**
- * Cloudflare Worker：校验授权码并转发 Gemini API（API Key 仅在 Worker 内解码）。
+ * Cloudflare Worker：校验授权码并转发 Gemini API。
  *
- * 部署：粘贴到 Cloudflare Worker 并 Deploy。
- * 可选：在 Worker 设置中添加机密变量 GEMINI_API_KEY，将优先于内置解码逻辑。
+ * 须在 Worker 中配置 Secrets：
+ * - GEMINI_API_KEY  — Gemini API 密钥
+ * - AUTH_CODE       — 网页端填写的授权码（与前端一致）
  */
 const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com";
-const ENC = "GzEUPmNAcmx4Wm07WxZkAQJlUnwQCgUNdl4BdXt3DzcXHgAUZWBa";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -13,23 +13,6 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, X-Auth-Code",
   "Access-Control-Max-Age": "86400",
 };
-
-function deriveGeminiKey(authCode) {
-  if (!authCode) return null;
-  let raw;
-  try {
-    raw = atob(ENC);
-  } catch {
-    return null;
-  }
-  let out = "";
-  for (let i = 0; i < raw.length; i++) {
-    out += String.fromCharCode(
-      raw.charCodeAt(i) ^ authCode.charCodeAt(i % authCode.length),
-    );
-  }
-  return out.startsWith("AIza") ? out : null;
-}
 
 function jsonError(status, message) {
   return new Response(JSON.stringify({ error: { message } }), {
@@ -45,9 +28,13 @@ export default {
     }
 
     const authCode = request.headers.get("X-Auth-Code")?.trim() || "";
-    const apiKey = env.GEMINI_API_KEY || deriveGeminiKey(authCode);
+    const expectedAuth = env.AUTH_CODE;
+    const apiKey = env.GEMINI_API_KEY;
 
-    if (!apiKey) {
+    if (!expectedAuth || !apiKey) {
+      return jsonError(500, "Worker 未配置 AUTH_CODE 或 GEMINI_API_KEY");
+    }
+    if (!authCode || authCode !== expectedAuth) {
       return jsonError(401, "授权码无效");
     }
 
