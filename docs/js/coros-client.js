@@ -13,7 +13,7 @@ const BASE_URLS = {
   cn: "https://teamcnapi.coros.com",
 };
 
-const REGION_TRY_ORDER = ["asia", "eu", "us", "cn"];
+const REGION_TRY_ORDER = ["cn", "asia", "eu", "us"];
 
 const ENDPOINTS = {
   login: "/account/login",

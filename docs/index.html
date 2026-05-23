@@ -26,6 +26,11 @@
           <label for="password">密码</label>
           <input id="password" type="password" autocomplete="current-password" placeholder="COROS 密码" />
         </div>
+        <div class="field">
+          <label for="auth-code">授权码</label>
+          <input id="auth-code" type="password" autocomplete="off" placeholder="AI 分析授权码" />
+          <span class="field-note">用于启用 Gemini 分析，与 COROS 登录密码无关</span>
+        </div>
         <button type="button" class="btn btn-primary" id="btn-fetch">获取 COROS 数据</button>
         <p class="status" id="fetch-status" aria-live="polite"></p>
       </section>
@@ -73,6 +78,6 @@
   <noscript>
     <p style="padding:2rem;text-align:center">请启用 JavaScript。</p>
   </noscript>
-  <script type="module" src="js/app.js?v=3"></script>
+  <script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>

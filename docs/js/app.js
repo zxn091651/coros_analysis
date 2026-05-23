@@ -1,6 +1,6 @@
 import { login, fetchCorosDataset } from "./coros-client.js";
 import { analyzeWithGemini, loadGeminiConfig } from "./gemini-client.js";
-import { deriveGeminiKey } from "./secrets.js";
+import { deriveGeminiKeyFromAuthCode } from "./secrets.js";
 
 const COROS_REGION = "cn";
 
@@ -34,6 +34,7 @@ let auth = null;
 let geminiKey = null;
 
 function setStatus(el, text, type = "") {
+  if (!el) return;
   el.textContent = text;
   el.className = "status" + (type ? ` ${type}` : "");
 }
@@ -52,18 +53,27 @@ function renderStats(data) {
   $("data-preview").textContent = JSON.stringify(data, null, 2);
 }
 
+function resolveGeminiKey() {
+  return deriveGeminiKeyFromAuthCode(fieldValue("auth-code").trim());
+}
+
 async function handleFetch() {
-  const email = $("email").value.trim();
-  const password = $("password").value;
+  const email = fieldValue("email").trim();
+  const password = fieldValue("password");
+  const authCode = fieldValue("auth-code").trim();
 
   if (!email || !password) {
     setStatus($("fetch-status"), "请填写 COROS 邮箱和密码", "error");
     return;
   }
+  if (!authCode) {
+    setStatus($("fetch-status"), "请填写授权码", "error");
+    return;
+  }
 
-  geminiKey = deriveGeminiKey(password);
+  geminiKey = resolveGeminiKey();
   if (!geminiKey) {
-    setStatus($("fetch-status"), "密码无法启用 AI 分析，请检查密码是否正确", "error");
+    setStatus($("fetch-status"), "授权码无效，无法启用 AI 分析", "error");
     return;
   }
 
@@ -136,7 +146,15 @@ $("btn-fetch").addEventListener("click", handleFetch);
 $("btn-analyze").addEventListener("click", handleAnalyze);
 $("btn-copy").addEventListener("click", handleCopy);
 
-const savedEmail = sessionStorage.getItem("coros_email");
-if (savedEmail) $("email").value = savedEmail;
+function init() {
+  const savedEmail = sessionStorage.getItem("coros_email");
+  const emailEl = $("email");
+  if (savedEmail && emailEl) emailEl.value = savedEmail;
+  loadGeminiConfig();
+}
 
-loadGeminiConfig();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
